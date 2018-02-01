@@ -10,9 +10,41 @@ int NCORES;
 vector< vector<pair<string, string> > > table;
 vector<pair<string, string> > row;
 
+
 void tester();
 void reader();
 void tableMaker();
+bool checkProcess();
+class Process
+{
+    int processNum;
+    int sequenceNum;
+    string processType;
+    int time;
+public:
+    Process(int _processNum, int _sequenceNum, string _processType, int _time)
+    {
+        processNum = _processNum;
+        sequenceNum = _sequenceNum;
+        processType = _processType;
+        time = _time;
+    }
+    int getProcNum() const { return processNum; }
+    int getSeqNum() const { return sequenceNum; }
+    string getProcType() const { return processType;}
+    int getTime() const { return time; }
+};
+
+class CompareTime
+{
+public:
+    bool operator()( const Process& p1, const Process& p2) {
+        return p1.getTime() > p2.getTime();
+    }
+};
+
+priority_queue<Process, vector<Process>, CompareTime> pq;
+
 enum
 string_code {
     eNCORES,
@@ -37,7 +69,7 @@ string_code hashit(string inString) {
 int main() {
     tableMaker();
     tester();
-    //reader();
+    reader();
 
     return 0;
 }
@@ -96,24 +128,39 @@ void tester() {
 
 
 void reader() {
-
-    switch (hashit(a)) {
+    int i = 0;
+    int j = 0;
+    int ms;
+    switch (hashit(table[i][j].first)) {
         case eNEW:
-            cout << "New process.\n";
-
-            break;
-        case eCORE: cout << "Core process.\n";
-
-            break;
-        case eSSD: cout << "SSD process.\n";
-
-            break;
-        case eINPUT: cout << "Input process.\n";
-
-            break;
-        case eErr: cout << "Input failed. Moving to next input.\n";
+            ms = stoi(table[i][j].second);
+            cout << "New process starts at t = " << ms << "ms" << endl;
+            if (NCORES > 0) {
+                int seqNum = 0;
+                NCORES--;
+                pq.push(Process(i, seqNum, "NewProcess", ms ));
+                j++;
+                ms = stoi(table[i][j].second);
+                Process p = pq.top();
+                int finishTime = p.getTime() + ms;
+                cout << "P" << p.getProcNum() << ": Core process starts at t = " << p.getTime() << " ms" << endl;
+                cout <<  "Core process ends at t = " << finishTime << " ms" << endl;
+                seqNum++;
+                pq.pop();
+                pq.push(Process(i, seqNum, "CoreProcess", finishTime));
+                bool pass = checkProcess();
+            }
             break;
         default:
             cout << "Input failed. Moving to next input.\n";
+    }
+}
+
+bool checkProcess() {
+    Process p = pq.top();
+    int nextProc = p.getProcNum() + 1;
+    cout << "Last process completes at t = " << p.getTime();
+    if(stoi(table[nextProc][0].second) < p.getTime()) {
+
     }
 }
