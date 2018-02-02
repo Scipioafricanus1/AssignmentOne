@@ -7,7 +7,7 @@ using namespace std;
 string a;
 string b;
 int NCORES;
-vector< vector<pair<string, string> > > table;
+vector< vector<pair<string, string>> > table;
 vector<pair<string, string> > row;
 
 
@@ -159,7 +159,7 @@ void reader() {
 bool checkProcess() {
     Process p = pq.top();
     int nextProc = p.getProcNum() + 1;
-    cout << "Last process completes at t = " << p.getTime();
+    cout << "Last process completes at t = " << p.getTime() << endl;
     if(stoi(table[nextProc][0].second) < p.getTime()) {
 
     }
