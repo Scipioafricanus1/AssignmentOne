@@ -139,7 +139,6 @@ void tester() {
 
 void arrival() {
     int seqNum = 0;
-    cout <<"Current Process: " << currentProc <<endl;
     if (currentProc < totalProcs) { //if there's still a process left, check arrival, else, go to scheduler.
         int ms = stoi(table[currentProc][seqNum].second);
         if(pq.empty() || ms < pq.top().getTime()) {
@@ -160,8 +159,7 @@ void arrival() {
                 rq.push(p);
                 processTracker[currentProc] = "READY";
 
-                cout << "P" <<p.getProcNum() << ": " << p.getProcType() << " request of t = " <<
-                    p.getTime() << " ms enters ready queue"<< endl;
+                cout << "P" <<p.getProcNum() << ": " << p.getProcType() << " request enters Ready Queue at t = " << ms << " ms"<<  endl;
                 currentProc++;
                 scheduler();
             }
@@ -178,50 +176,47 @@ void arrival() {
 void scheduler() {
     // checks next process in pq. Completes the process, checks *
 
-        Process p = pq.top();
-        pq.pop();
-        int finishTime;
-        switch (hashit(p.getProcType())) {
-            case eCORE:
-                cout << "Core finishes at t = " << p.getTime() << " ms" << endl;
-                if(rq.empty()) {
-                    NCORES++;
-                } else {
-                    Process Q = rq.front();
-                    rq.pop();
-                    finishTime = Q.getTime() + p.getTime();
-                    pq.push(Process(Q.getProcNum(),Q.getSeqNum(),Q.getProcType(), finishTime));
-                }
-                request(p);
-                break;
-            case eSSD:
-                cout << "SSD finishes at t = " << p.getTime() << " ms" << endl;
-                if(sq.empty()) {
-                    SSDFree = true;
-                } else {
-                    Process Q = sq.front();
-                    sq.pop();
-                    finishTime = Q.getTime() + p.getTime();
-                    pq.push(Process(Q.getProcNum(),Q.getSeqNum(),Q.getProcType(), finishTime));
-                }
-                request(p);
-                break;
-            case eINPUT:
-                cout << "INPUT finishes at t = " << p.getTime() << " ms" << endl;
-                if(iq.empty()) {
-                    INPUTFree = true;
-                } else {
-                    Process Q = iq.front();
-                    iq.pop();
-                    finishTime = Q.getTime() + p.getTime();
-                    pq.push(Process(Q.getProcNum(),Q.getSeqNum(),Q.getProcType(), finishTime));
-                }
-                request(p);
-                break;
-            default:
-                cout << "Something went wrong at line 211" << endl;
-                break;
+    Process p = pq.top();
+    pq.pop();
+    int finishTime;
+    cout << "TYPE: " << p.getProcType()<<endl;
+
+    if(p.getProcType() == "CoreCompletion") {
+        cout << "Core finishes at t = " << p.getTime() << " ms" << endl;
+        if(rq.empty()) {
+            NCORES++;
+        } else {
+            Process Q = rq.front();
+            rq.pop();
+            finishTime = Q.getTime() + p.getTime();
+            pq.push(Process(Q.getProcNum(),Q.getSeqNum(),Q.getProcType(), finishTime));
         }
+        request(p);
+    } else if (p.getProcType() == "SSDCompletion") {
+        cout << "SSD finishes at t = " << p.getTime() << " ms" << endl;
+        if(sq.empty()) {
+            SSDFree = true;
+        } else {
+            Process Q = sq.front();
+            sq.pop();
+            finishTime = Q.getTime() + p.getTime();
+            pq.push(Process(Q.getProcNum(),Q.getSeqNum(),Q.getProcType(), finishTime));
+        }
+        request(p);
+    } else if (p.getProcType() == "InputCompletion") {
+        cout << "Input finishes at t = " << p.getTime() << " ms" << endl;
+        if(iq.empty()) {
+            INPUTFree = true;
+        } else {
+            Process Q = iq.front();
+            iq.pop();
+            finishTime = Q.getTime() + p.getTime();
+            pq.push(Process(Q.getProcNum(),Q.getSeqNum(),Q.getProcType(), finishTime));
+        }
+        request(p);
+    } else {
+        cout << "An error has occurred at line 191 or before.";
+    }
     arrival();
 
 
