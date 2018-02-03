@@ -217,7 +217,6 @@ void scheduler() {
     } else {
         cout << "An error has occurred at line 191 or before.";
     }
-    arrival();
 
 
 }
@@ -225,6 +224,10 @@ void scheduler() {
 void  request(const Process& p ) {
     if( table[p.getProcNum()].size() == (p.getSeqNum()+1) ) { //process is finished if this is true.
         cout << "Process " << p.getProcNum() << " finishes at t = " << p.getTime() << "ms" << endl;
+        cout << "WHY IS THERE A SEG FAULT??"<<endl;
+        if(pq.empty()) {
+            return;
+        }
     } else {
         string requestType = table[p.getProcNum()][p.getSeqNum()+1].first;
         int requestTime = stoi(table[p.getProcNum()][p.getSeqNum()+1].second);
@@ -265,6 +268,7 @@ void  request(const Process& p ) {
         }
 
     }
+    arrival();
 
 
 
