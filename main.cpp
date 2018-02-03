@@ -4,6 +4,13 @@
 #include <queue> //queue
 using namespace std;
 
+//Summary globals:
+int totalSSDsAccessed = 0;
+int SSDTimes = 0;
+int SSDTotal = 0;
+int totalCORERequestTime = 0;
+
+//program globals:
 string a;
 string b;
 int NCORES;
@@ -15,6 +22,7 @@ vector< vector<pair<string, string>> > table;
 vector<pair<string, string> > row;
 vector<string> processTracker;
 
+//function declarations:
 void scheduler();
 void tester();
 void tableMaker();
@@ -139,7 +147,7 @@ void tester() {
 
 void arrival() {
     int seqNum = 0;
-    if (currentProc < totalProcs) { //if there's still a process left, check arrival, else, go to scheduler.
+    if (currentProc < totalProcs) { //if there's still a process left, check arrival, else, go to scheduler. if arrival starts before next process, check arrival, else, go to scheduler.
         int ms = stoi(table[currentProc][seqNum].second);
         if(pq.empty() || ms < pq.top().getTime()) {
             if (NCORES > 0) {
@@ -147,8 +155,8 @@ void arrival() {
                 processTracker[currentProc] = "RUNNING";
                 seqNum++;
                 int finishTime = ms + stoi(table[currentProc][seqNum].second);
+                totalCORERequestTime += stoi(table[currentProc][seqNum].second);
                 cout <<endl<< "Process "<<currentProc<<" starts at t = " << ms << "ms" << endl;
-
                 for(int i = 0; i < processTracker.size(); i++)
                 {
                     string temp = processTracker[i];
@@ -167,7 +175,6 @@ void arrival() {
 
             } else { //if CORES are busy, waits.
                 cout <<endl<< "Process "<<currentProc<<" starts at t = " << ms << "ms" << endl;
-
                 for(int i = 0; i < processTracker.size(); i++)
                 {
                     string temp = processTracker[i];
@@ -179,6 +186,7 @@ void arrival() {
                 cout << endl;
                 seqNum++;
                 Process p = Process(currentProc, seqNum, "CoreCompletion", stoi(table[currentProc][seqNum].second));
+                totalCORERequestTime += stoi(table[currentProc][seqNum].second);
                 rq.push(p);
                 processTracker[currentProc] = "READY";
 
@@ -217,6 +225,7 @@ void scheduler() {
         request(p);
     } else if (p.getProcType() == "SSDCompletion") {
         cout << "SSD finishes at t = " << p.getTime() << " ms" << endl;
+        SSDTimes += p.getTime();
         if(sq.empty()) {
             SSDFree = true;
         } else {
@@ -258,7 +267,18 @@ void  request(const Process& p ) {
         cout << endl;
         processTracker[p.getProcNum()] = "OPEN"; //finished with the process for good now.
         cout << endl;
-        if(pq.empty() && rq.empty() && sq.empty() && iq.empty()) { //ends program here, rather than calling arrival recursively.
+        if(pq.empty() && rq.empty() && sq.empty() && iq.empty()) { //ENDS PROGRAM HERE rather than calling arrival recursively.
+            cout << endl<< "Summary: "<<endl;
+            cout << "Number of process that completed: " << totalProcs << endl;
+            cout << "Total number of SSD accesses: "<< totalSSDsAccessed<<endl;
+            double coreUtilization = (double)totalCORERequestTime/(double)p.getTime();
+            double SSDAverage = (double)SSDTimes/(double)totalSSDsAccessed;
+            double SSDUtilization = (double)SSDTotal/(double)p.getTime();
+
+            cout << "Average SSD access time: " << SSDAverage<<" ms" << endl;
+            cout << "Total elapsed time: " << p.getTime() << " ms" << endl;
+            cout << "Core utilization: " << coreUtilization*100 << " percent" <<endl;
+            cout << "SSD utilization: " << SSDUtilization*100 << " percent" << endl;
             return;
         }
     } else {
@@ -280,12 +300,17 @@ void  request(const Process& p ) {
             if(NCORES > 0) {
                 NCORES--;
                 cout << "Core request time = " << table[p.getProcNum()][p.getSeqNum()+1].second << " ms" << endl;
+                totalCORERequestTime += stoi(table[p.getProcNum()][p.getSeqNum()+1].second);
                 cout << "Core finish time = " << finishTime << "ms" << endl;
                 pq.push(Process(p.getProcNum(), p.getSeqNum()+1, "CoreCompletion", finishTime));
             } else {
                 rq.push(Process(p.getProcNum(), p.getSeqNum()+1, "CoreCompletion", requestTime));
+                totalCORERequestTime += requestTime;
             }
         } else if (requestType == "SSD") {
+            totalSSDsAccessed++;
+            SSDTimes -= p.getTime();
+            SSDTotal += requestTime;
             if(SSDFree) {
                 SSDFree = false;
                 cout << "SSD request time = " << table[p.getProcNum()][p.getSeqNum()+1].second << "ms" << endl;
