@@ -13,7 +13,7 @@ int totalProcs = 0;
 int currentProc = 0;
 vector< vector<pair<string, string>> > table;
 vector<pair<string, string> > row;
-vector<bool> processTracker;
+vector<string> processTracker;
 
 void scheduler();
 void tester();
@@ -147,13 +147,36 @@ void arrival() {
                 processTracker[currentProc] = "RUNNING";
                 seqNum++;
                 int finishTime = ms + stoi(table[currentProc][seqNum].second);
-                cout << "New process starts at t = " << ms << "ms" << endl;
+                cout <<endl<< "Process "<<currentProc<<" starts at t = " << ms << "ms" << endl;
+
+                for(int i = 0; i < processTracker.size(); i++)
+                {
+                    string temp = processTracker[i];
+                    if(temp == "OPEN" || i == currentProc) {
+                    } else {
+                        cout << "Process " << i << " is " << temp << endl;
+                    }
+                }
+                cout << endl;
+
+
                 cout << "Core process scheduled to finish at t = " << finishTime << " ms" << endl;
                 pq.push(Process(currentProc, seqNum, "CoreCompletion", finishTime));
                 currentProc++;
                 arrival();
 
             } else { //if CORES are busy, waits.
+                cout <<endl<< "Process "<<currentProc<<" starts at t = " << ms << "ms" << endl;
+
+                for(int i = 0; i < processTracker.size(); i++)
+                {
+                    string temp = processTracker[i];
+                    if(temp == "OPEN" || i == currentProc) {
+                    } else {
+                        cout << "Process " << i << " is " << temp << endl;
+                    }
+                }
+                cout << endl;
                 seqNum++;
                 Process p = Process(currentProc, seqNum, "CoreCompletion", stoi(table[currentProc][seqNum].second));
                 rq.push(p);
@@ -218,21 +241,30 @@ void scheduler() {
         cout << "An error has occurred at line 191 or before.";
     }
 
-
 }
 
 void  request(const Process& p ) {
     if( table[p.getProcNum()].size() == (p.getSeqNum()+1) ) { //process is finished if this is true.
-        cout << "Process " << p.getProcNum() << " finishes at t = " << p.getTime() << "ms" << endl;
-        cout << "WHY IS THERE A SEG FAULT??"<<endl;
-        if(pq.empty()) {
+        cout << endl << "Process " << p.getProcNum() << " finishes at t = " << p.getTime() << "ms" << endl;
+        processTracker[p.getProcNum()] = "TERMINATED";
+        for(int i = 0; i < processTracker.size(); i++)
+        {
+            string temp = processTracker[i];
+            if(temp == "OPEN") {
+            } else {
+                cout << "Process " << i << " is " << temp << endl;
+            }
+        }
+        cout << endl;
+        processTracker[p.getProcNum()] = "OPEN"; //finished with the process for good now.
+        cout << endl;
+        if(pq.empty() && rq.empty() && sq.empty() && iq.empty()) { //ends program here, rather than calling arrival recursively.
             return;
         }
     } else {
         string requestType = table[p.getProcNum()][p.getSeqNum()+1].first;
         int requestTime = stoi(table[p.getProcNum()][p.getSeqNum()+1].second);
         int finishTime = p.getTime() + requestTime;
-
         if(requestType == "INPUT") {
 
             if(INPUTFree) {
@@ -269,7 +301,6 @@ void  request(const Process& p ) {
 
     }
     arrival();
-
 
 
 }
