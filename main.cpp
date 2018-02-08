@@ -18,7 +18,7 @@ bool SSDFree = true;
 bool INPUTFree = true;
 int totalProcs = 0;
 int currentProc = 0;
-vector< vector<pair<string, string>> > table;
+vector< vector<pair<string, string> > > table;
 vector<pair<string, string> > row;
 vector<string> processTracker;
 
@@ -61,26 +61,8 @@ queue<Process> sq;
 queue<Process> iq;
 void request(const Process& p );
 
-enum
-string_code {
-    eNCORES,
-    eNEW,
-    eCORE,
-    eSSD,
-    eINPUT,
-    eErr
-};
-string_code hashit(string inString) {
-    for (unsigned int i = 0; i < inString.size(); i++) {
-        inString.at(i) = static_cast<char>(toupper(inString.at(i)));
-    }
-    if (inString == "NCORES") return eNCORES;
-    if (inString == "NEW") return eNEW;
-    if (inString == "CORE" || "CoreCompletion") return eCORE;
-    if (inString == "SSD" || "SSDCompletion") return eSSD;
-    if (inString == "INPUT" || "InputCompletion") return eINPUT;
-    return eErr;
-}
+
+
 
 int main() {
     tableMaker();
@@ -90,14 +72,16 @@ int main() {
     return 0;
 }
 
+
 void tableMaker() {
     while (cin >> a >> b) {
-        switch (hashit(a)) {
-        case eNCORES:
+        for (unsigned int i = 0; i < a.size(); i++) {
+            a.at(i) = static_cast<char>(toupper(a.at(i)));
+        }
+        if(a == "NCORES") {
             cout << "# of cores: " << b << endl;
             NCORES = stoi(b);
-            break;
-        case eNEW:
+        } else if( a == "NEW") {
             cout << "New process.\n";
             totalProcs++;
             processTracker.push_back("OPEN");
@@ -109,27 +93,20 @@ void tableMaker() {
                 row.clear();
                 row.push_back(make_pair(a,b));
             }
-            break;
-        case eCORE:
+        } else if( a == "CORE") {
             cout << "Core process.\n";
             row.push_back(make_pair(a, b));
-            break;
-        case eSSD:
+        } else if( a == "SSD") {
             cout << "SSD process.\n";
             row.push_back(make_pair(a, b));
-            break;
-        case eINPUT:
+        } else if( a == "INPUT") {
             cout << "Input process.\n";
-                row.push_back(make_pair(a, b));
+            row.push_back(make_pair(a, b));
+        } else if(a == "break") {
             break;
-        case eErr:
+        } else {
             cout << "Input failed. Moving to next input.\n";
-            break;
-        default:
-            cout << "Input failed. Moving to next input.\n";
-            break;
         }
-
     }
     table.push_back(row);
     row.clear();
