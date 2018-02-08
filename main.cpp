@@ -1,8 +1,17 @@
+//NAME: Brent Harris 1231407
+//COSC 3360
+//Due: Feb 16, 2018
+
+
+
 #include <iostream>
 #include <algorithm>//sort
 #include <vector>	//vector
 #include <queue> //queue
 using namespace std;
+
+
+
 
 //Summary globals:
 int totalSSDsAccessed = 0;
@@ -27,7 +36,7 @@ void scheduler();
 void tester();
 void tableMaker();
 void arrival();
-class Process
+class Process //Used to contain important information for the priority queue, which sorts items by time.
 {
     int processNum;
     int sequenceNum;
@@ -47,7 +56,7 @@ public:
     int getTime() const { return time; }
 };
 
-class CompareTime
+class CompareTime //Used to explicitly compare process times in the priority queue. Orders into min-heap.
 {
 public:
     bool operator()( const Process& p1, const Process& p2) {
@@ -73,7 +82,7 @@ int main() {
 }
 
 
-void tableMaker() {
+void tableMaker() { //Makes a table of the data based on it's process, in order to allow for backtracking when needed.
     while (cin >> a >> b) {
         for (unsigned int i = 0; i < a.size(); i++) {
             a.at(i) = static_cast<char>(toupper(a.at(i)));
@@ -113,7 +122,8 @@ void tableMaker() {
 
 }
 
-void tester() {
+void tester() { //merely tests to make sure the process table works correctly. Not necessary to call when finished, but neat to have
+                //for documentation I guess.
     for( int i = 0; i < table.size(); i++) {
         for( int j = 0; j < table[i].size(); j++) {
             cout << "Process " << i << ": " << table[i][j].first << " " << table[i][j].second << endl;
@@ -122,7 +132,11 @@ void tester() {
 }
 
 
-void arrival() {
+void arrival() {//brains of the operation, new processes are the most important, since they get looked at first, and start the ball
+                //rolling. Looks for a new process to start if nothing is scheduled before the new process.
+                //Also calls scheduler which finishes processes, so that they can call arrival again.
+                //Note that this is me using a long-winded recursion, rather than a while loop.
+                //This means I have to end it by breaking the recursion when there are no processes left anywhere.
     int seqNum = 0;
     if (currentProc < totalProcs) { //if there's still a process left, check arrival, else, go to scheduler. if arrival starts before next process, check arrival, else, go to scheduler.
         int ms = stoi(table[currentProc][seqNum].second);
@@ -182,7 +196,7 @@ void arrival() {
 }
 
 void scheduler() {
-    // checks next process in pq. Completes the process, checks *
+    // checks next process in pq. Completes the process, calls for next request based on last process finished.
 
     Process p = pq.top();
     pq.pop();
@@ -198,6 +212,7 @@ void scheduler() {
             rq.pop();
             finishTime = Q.getTime() + p.getTime();
             pq.push(Process(Q.getProcNum(),Q.getSeqNum(),Q.getProcType(), finishTime));
+            processTracker[Q.getProcNum()] = "RUNNING";
         }
         request(p);
     } else if (p.getProcType() == "SSDCompletion") {
@@ -210,6 +225,7 @@ void scheduler() {
             sq.pop();
             finishTime = Q.getTime() + p.getTime();
             pq.push(Process(Q.getProcNum(),Q.getSeqNum(),Q.getProcType(), finishTime));
+            processTracker[Q.getProcNum()] = "BLOCKED";
         }
         request(p);
     } else if (p.getProcType() == "InputCompletion") {
@@ -221,6 +237,7 @@ void scheduler() {
             iq.pop();
             finishTime = Q.getTime() + p.getTime();
             pq.push(Process(Q.getProcNum(),Q.getSeqNum(),Q.getProcType(), finishTime));
+            processTracker[Q.getProcNum()] = "RUNNING";
         }
         request(p);
     } else {
@@ -229,7 +246,7 @@ void scheduler() {
 
 }
 
-void  request(const Process& p ) {
+void  request(const Process& p ) { // checks if program is finished, exits the recursion if so, else it schedules the next event.
     if( table[p.getProcNum()].size() == (p.getSeqNum()+1) ) { //process is finished if this is true.
         cout << endl << "Process " << p.getProcNum() << " finishes at t = " << p.getTime() << "ms" << endl;
         processTracker[p.getProcNum()] = "TERMINATED";
@@ -263,14 +280,14 @@ void  request(const Process& p ) {
         int requestTime = stoi(table[p.getProcNum()][p.getSeqNum()+1].second);
         int finishTime = p.getTime() + requestTime;
         if(requestType == "INPUT") {
-
+            processTracker[p.getProcNum()] = "BLOCKED";
             if(INPUTFree) {
                 INPUTFree = false;
-
                 cout << "Input request time = " << table[p.getProcNum()][p.getSeqNum()+1].second << "ms" << endl;
                 cout << "Input finish time = " << finishTime << "ms" << endl;
                 pq.push(Process(p.getProcNum(), p.getSeqNum()+1, "InputCompletion", finishTime));
             } else {
+                cout <<"P"<<p.getProcNum()<<" S"<<p.getSeqNum()<<" Time: "<< p.getTime()<< " SSD must wait in Ready queue"<<endl;
                 iq.push(Process(p.getProcNum(), p.getSeqNum()+1, "InputCompletion", requestTime));
             }
         } else if (requestType == "CORE") {
@@ -280,14 +297,18 @@ void  request(const Process& p ) {
                 totalCORERequestTime += stoi(table[p.getProcNum()][p.getSeqNum()+1].second);
                 cout << "Core finish time = " << finishTime << "ms" << endl;
                 pq.push(Process(p.getProcNum(), p.getSeqNum()+1, "CoreCompletion", finishTime));
+                processTracker[p.getProcNum()] = "RUNNING";
             } else {
+                cout <<"P"<<p.getProcNum()<<" S"<<p.getSeqNum()<<" Time: "<< p.getTime()<< " CORE must wait in Ready queue"<<endl;
                 rq.push(Process(p.getProcNum(), p.getSeqNum()+1, "CoreCompletion", requestTime));
                 totalCORERequestTime += requestTime;
+                processTracker[p.getProcNum()] = "READY";
             }
         } else if (requestType == "SSD") {
             totalSSDsAccessed++;
             SSDTimes -= p.getTime();
             SSDTotal += requestTime;
+            processTracker[p.getProcNum()] = "BLOCKED";
             if(SSDFree) {
                 SSDFree = false;
                 cout << "SSD request time = " << table[p.getProcNum()][p.getSeqNum()+1].second << "ms" << endl;
@@ -295,6 +316,7 @@ void  request(const Process& p ) {
                 pq.push(Process(p.getProcNum(), p.getSeqNum()+1, "SSDCompletion", finishTime));
 
             } else {
+                cout <<"P"<<p.getProcNum()<<" S"<<p.getSeqNum()<<" Time: "<< p.getTime()<< " SSD must wait in Ready queue"<<endl;
                 sq.push(Process(p.getProcNum(), p.getSeqNum()+1, "SSDCompletion", requestTime));
             }
         } else {
