@@ -71,11 +71,9 @@ queue<Process> iq;
 void request(const Process& p );
 
 
-
-
 int main() {
     tableMaker();
-    tester();
+    //tester();
     arrival();
 
     return 0;
@@ -88,14 +86,14 @@ void tableMaker() { //Makes a table of the data based on it's process, in order 
             a.at(i) = static_cast<char>(toupper(a.at(i)));
         }
         if(a == "NCORES") {
-            cout << "# of cores: " << b << endl;
+            //cout << "# of cores: " << b << endl;
             NCORES = stoi(b);
         } else if( a == "NEW") {
-            cout << "New process.\n";
+            //cout << "New process.\n";
             totalProcs++;
             processTracker.push_back("OPEN");
             if(row.empty()) {
-                cout << "Pushed it back, since first process.\n";
+                //cout << "Pushed it back, since first process.\n";
                 row.push_back(make_pair(a, b));
             } else {
                 table.push_back(row);
@@ -103,18 +101,18 @@ void tableMaker() { //Makes a table of the data based on it's process, in order 
                 row.push_back(make_pair(a,b));
             }
         } else if( a == "CORE") {
-            cout << "Core process.\n";
+            //cout << "Core process.\n";
             row.push_back(make_pair(a, b));
         } else if( a == "SSD") {
-            cout << "SSD process.\n";
+            //cout << "SSD process.\n";
             row.push_back(make_pair(a, b));
         } else if( a == "INPUT") {
-            cout << "Input process.\n";
+            //cout << "Input process.\n";
             row.push_back(make_pair(a, b));
         } else if(a == "break") {
             break;
         } else {
-            cout << "Input failed. Moving to next input.\n";
+            //cout << "Input failed. Moving to next input.\n";
         }
     }
     table.push_back(row);
@@ -132,7 +130,7 @@ void tester() { //merely tests to make sure the process table works correctly. N
 }
 
 
-void arrival() {//brains of the operation, new processes are the most important, since they get looked at first, and start the ball
+void arrival() {//new processes are the most important, since they get looked at first, and start the ball
                 //rolling. Looks for a new process to start if nothing is scheduled before the new process.
                 //Also calls scheduler which finishes processes, so that they can call arrival again.
                 //Note that this is me using a long-winded recursion, rather than a while loop.
@@ -143,7 +141,6 @@ void arrival() {//brains of the operation, new processes are the most important,
         if(pq.empty() || ms < pq.top().getTime()) {
             if (NCORES > 0) {
                 NCORES--;
-                processTracker[currentProc] = "RUNNING";
                 seqNum++;
                 int finishTime = ms + stoi(table[currentProc][seqNum].second);
                 totalCORERequestTime += stoi(table[currentProc][seqNum].second);
@@ -156,10 +153,11 @@ void arrival() {//brains of the operation, new processes are the most important,
                         cout << "Process " << i << " is " << temp << endl;
                     }
                 }
+                processTracker[currentProc] = "RUNNING";
                 cout << endl;
 
 
-                cout << "Core process scheduled to finish at t = " << finishTime << " ms" << endl;
+                //cout << "Core process scheduled to finish at t = " << finishTime << " ms" << endl;
                 pq.push(Process(currentProc, seqNum, "CoreCompletion", finishTime));
                 currentProc++;
                 arrival();
@@ -181,9 +179,9 @@ void arrival() {//brains of the operation, new processes are the most important,
                 rq.push(p);
                 processTracker[currentProc] = "READY";
 
-                cout << "P" <<p.getProcNum() << ": " << p.getProcType() << " request enters Ready Queue at t = " << ms << " ms"<<  endl;
+                //cout << "P" <<p.getProcNum() << ": " << p.getProcType() << " request enters Ready Queue at t = " << ms << " ms"<<  endl;
                 currentProc++;
-                scheduler();
+                arrival(); //fixed this
             }
         } else {
             scheduler();
@@ -201,10 +199,10 @@ void scheduler() {
     Process p = pq.top();
     pq.pop();
     int finishTime;
-    cout << "TYPE: " << p.getProcType()<<endl;
+    //cout << "TYPE: " << p.getProcType()<<endl;
 
     if(p.getProcType() == "CoreCompletion") {
-        cout << "Core finishes at t = " << p.getTime() << " ms" << endl;
+        //cout << "P" << p.getProcNum()<<": Core finishes at t = " << p.getTime() << " ms" << endl;
         if(rq.empty()) {
             NCORES++;
         } else {
@@ -216,7 +214,7 @@ void scheduler() {
         }
         request(p);
     } else if (p.getProcType() == "SSDCompletion") {
-        cout << "SSD finishes at t = " << p.getTime() << " ms" << endl;
+        //cout <<"P" << p.getProcNum()<<":SSD finishes at t = " << p.getTime() << " ms" << endl;
         SSDTimes += p.getTime();
         if(sq.empty()) {
             SSDFree = true;
@@ -229,19 +227,20 @@ void scheduler() {
         }
         request(p);
     } else if (p.getProcType() == "InputCompletion") {
-        cout << "Input finishes at t = " << p.getTime() << " ms" << endl;
+        //cout << "P" << p.getProcNum()<<":Input finishes at t = " << p.getTime() << " ms" << endl;
         if(iq.empty()) {
             INPUTFree = true;
         } else {
             Process Q = iq.front();
             iq.pop();
             finishTime = Q.getTime() + p.getTime();
+            //cout << "P" << Q.getProcNum()<<": Input starts at t = " << p.getTime() << " ms, Finishes at t = " << finishTime << endl;
             pq.push(Process(Q.getProcNum(),Q.getSeqNum(),Q.getProcType(), finishTime));
-            processTracker[Q.getProcNum()] = "RUNNING";
+            processTracker[Q.getProcNum()] = "BLOCKED";
         }
         request(p);
     } else {
-        cout << "An error has occurred at line 191 or before.";
+        //cout << "An error has occurred at line 191 or before.";
     }
 
 }
@@ -283,23 +282,23 @@ void  request(const Process& p ) { // checks if program is finished, exits the r
             processTracker[p.getProcNum()] = "BLOCKED";
             if(INPUTFree) {
                 INPUTFree = false;
-                cout << "Input request time = " << table[p.getProcNum()][p.getSeqNum()+1].second << "ms" << endl;
-                cout << "Input finish time = " << finishTime << "ms" << endl;
+                //cout <<"P" << p.getProcNum()<<": Input request time = " << table[p.getProcNum()][p.getSeqNum()+1].second << "ms at t = " << p.getTime() << endl;
+                //cout <<"P" << p.getProcNum()<<": Input finish time = " << finishTime << "ms" << endl;
                 pq.push(Process(p.getProcNum(), p.getSeqNum()+1, "InputCompletion", finishTime));
             } else {
-                cout <<"P"<<p.getProcNum()<<" S"<<p.getSeqNum()<<" Time: "<< p.getTime()<< " SSD must wait in Ready queue"<<endl;
+                //cout <<"P"<<p.getProcNum()<<": S"<<p.getSeqNum()<<": Time: "<< p.getTime()<< " Input must wait in Input queue"<<endl;
                 iq.push(Process(p.getProcNum(), p.getSeqNum()+1, "InputCompletion", requestTime));
             }
         } else if (requestType == "CORE") {
             if(NCORES > 0) {
                 NCORES--;
-                cout << "Core request time = " << table[p.getProcNum()][p.getSeqNum()+1].second << " ms" << endl;
+                //cout <<"P" << p.getProcNum()<<":Core request time = " << table[p.getProcNum()][p.getSeqNum()+1].second << " ms at t = " << p.getTime() << endl;
                 totalCORERequestTime += stoi(table[p.getProcNum()][p.getSeqNum()+1].second);
-                cout << "Core finish time = " << finishTime << "ms" << endl;
+                //cout <<"P" << p.getProcNum()<<":Core finish time = " << finishTime << "ms" << endl;
                 pq.push(Process(p.getProcNum(), p.getSeqNum()+1, "CoreCompletion", finishTime));
                 processTracker[p.getProcNum()] = "RUNNING";
             } else {
-                cout <<"P"<<p.getProcNum()<<" S"<<p.getSeqNum()<<" Time: "<< p.getTime()<< " CORE must wait in Ready queue"<<endl;
+                //cout <<"P"<<p.getProcNum()<<" S"<<p.getSeqNum()<<" Time: "<< p.getTime()<< " CORE must wait in Ready queue"<<endl;
                 rq.push(Process(p.getProcNum(), p.getSeqNum()+1, "CoreCompletion", requestTime));
                 totalCORERequestTime += requestTime;
                 processTracker[p.getProcNum()] = "READY";
@@ -311,20 +310,18 @@ void  request(const Process& p ) { // checks if program is finished, exits the r
             processTracker[p.getProcNum()] = "BLOCKED";
             if(SSDFree) {
                 SSDFree = false;
-                cout << "SSD request time = " << table[p.getProcNum()][p.getSeqNum()+1].second << "ms" << endl;
-                cout << "SSD finish time = " << finishTime << "ms" << endl;
+                //cout <<"P" << p.getProcNum()<<":SSD request time = " << table[p.getProcNum()][p.getSeqNum()+1].second << "ms at t = " << p.getTime() << endl;
+                //cout <<"P" << p.getProcNum()<<":SSD finish time = " << finishTime << "ms" << endl;
                 pq.push(Process(p.getProcNum(), p.getSeqNum()+1, "SSDCompletion", finishTime));
 
             } else {
-                cout <<"P"<<p.getProcNum()<<" S"<<p.getSeqNum()<<" Time: "<< p.getTime()<< " SSD must wait in Ready queue"<<endl;
+                //cout <<"P"<<p.getProcNum()<<" S"<<p.getSeqNum()<<" Time: "<< p.getTime()<< " SSD must wait in SSD queue"<<endl;
                 sq.push(Process(p.getProcNum(), p.getSeqNum()+1, "SSDCompletion", requestTime));
             }
         } else {
-            cout << "Mistakes were made at line 273 or before it maybe" <<endl;
+            //cout << "Mistakes were made at line 273 or before it maybe" <<endl;
         }
 
     }
     arrival();
-
-
 }
