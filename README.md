@@ -13,3 +13,8 @@ Actual time is not actually being used, but instead we are using a sum of each n
 Each new process is monotonically increasing in arrival time, but even if this were not the case, I could sort the processes in
 my process table by the arrival time of the NEW process and it would work fine.
 We assume there is no errors in the input.
+
+
+- If there are no cores left when a core request begins, the process is put in a ready queue and put in READY state.
+- If the SSD is being used, the process is put into a BLOCKED state and its own queue.
+- If the INPUT is being used, the process is put into a BLOCKED state as well and put into its own queue.
